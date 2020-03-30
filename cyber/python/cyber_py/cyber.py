@@ -39,8 +39,8 @@ sys.path.append(CYBER_PATH + "/python/cyber_py")
 sys.path.append(CYBER_DIR + "/python/")
 sys.path.append(CYBER_DIR + "/cyber/")
 
-_CYBER_INIT = importlib.import_module('_cyber_init')
-_CYBER_NODE = importlib.import_module('_cyber_node')
+_CYBER_INIT = importlib.import_module('_cyber_init')  #20200330fromMarc:apollo/cyber/py_wrapper/py_init_wrapper.cc
+_CYBER_NODE = importlib.import_module('_cyber_node')  #20200330fromMarc:apollo/cyber/py_wrapper/py_node_wrapper.cc
 
 
 def init(module_name="cyber_py"):
