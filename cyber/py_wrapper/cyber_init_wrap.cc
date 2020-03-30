@@ -66,7 +66,8 @@ static PyObject *cyber_py_waitforshutdown(PyObject *self, PyObject *args) {
 
 /////////////////////////////////////////////////////////////////////
 //global for whole page, init module
-//20200330fromMarc: PyMethodDef
+//20200330fromMarc: PyMethodDef，PyMODINIT_FUNC
+//reference: <http://www.xefan.com/archives/84082.html>
 //PyMethodDef结构体有四个字段。
 //第一个是一个字符串，表示在Python中对应的方法的名称；
 //第二个是对应的C代码的函数；
