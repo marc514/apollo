@@ -6,7 +6,9 @@ Apollo documents contain the following folders:
 > 20200331fromMarc:have used it for some time
 ---
 - **[Technical Tutorial](technical_tutorial/README.md)** - Everything you need to know about Apollo. Written as individual versions with links to every document related to that version.
-> 20200331fromMarc:learning start point from here
+> 20200331fromMarc:learning start point from here  
+> First, overview all the md files, And then take Routing module as an example:  
+> routing_component(public from cyber component)-->rounting-->navigator-->algorithm implementation
 ---
 - **[Demo Guide](demo_guide/README.md)** - A guide to setting up Apollo should you not have the Hardware necessary for Setup.
 
