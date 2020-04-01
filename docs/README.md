@@ -6,7 +6,7 @@ Apollo documents contain the following folders:
 > 20200331fromMarc:have used it for some time
 ---
 - **[Technical Tutorial](technical_tutorial/README.md)** - Everything you need to know about Apollo. Written as individual versions with links to every document related to that version.
-> 20200331fromMarc:learning start point from here  
+> 20200331fromMarc:learning start point from here [apollo_3.0_technical_tutorial_cn|https://github.com/marc514/apollo/blob/r3.5.0/docs/technical_tutorial/apollo_3.0_technical_tutorial_cn.md]  
 > First, overview all the md files, And then take Routing module as an example:  
 > routing_component(public from cyber component)-->rounting-->navigator-->algorithm implementation
 ---
