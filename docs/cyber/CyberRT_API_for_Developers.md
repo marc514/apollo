@@ -180,6 +180,25 @@ cc_binary(
 	- ./bazel-bin/cyber/examples/listener
 - Examine the results: you should see message printing out on listener. 
 
+### Code Example--Python
+> from Marc: It's more easier to acquire the data in channels which you need
+
+```Python
+import common.proto_utils as proto_utils  # 解析proto
+from cyber_py import cyber                # 引入cyber
+from modules.canbus.proto.chassis_pb2 import Chassis  # 引入所需数据对应的proto库(cpp)
+
+def main():
+    cyber.init()
+    chassis_sub = cyber.Node("chassis_sub")
+    chassis_sub.create_reader('/apollo/canbus/chassis',
+            Chassis, plotter.callback_chassis)
+
+if __name__ == '__main__':
+    main()
+``` 
+
+
 ## Service Creation and Use
 
 ### Introduction
