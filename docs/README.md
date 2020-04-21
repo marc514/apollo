@@ -6,7 +6,7 @@
 [README](quickstart/README.md) - A hardware and software guide to setting up Apollo, segregated by versions
 
 ## Technical Tutorial
-> 20200331: learning start from here: [apollo_3.0_technical_tutorial_cn.md](https://github.com/marc514/apollo/blob/r3.5.0/docs/technical_tutorial/apollo_3.0_technical_tutorial_cn.md) 
+> 20200331: learning start from here: [apollo_3.0_technical_tutorial_cn.md](https://github.com/marc514/apollo/blob/r3.5.0/docs/technical_tutorial/apollo_3.0_technical_tutorial_cn.md)  
 > First, overview all the md files, And then take Routing module as an example:  
 > routing_component(public from cyber component)-->rounting-->navigator-->algorithm implementation
 
