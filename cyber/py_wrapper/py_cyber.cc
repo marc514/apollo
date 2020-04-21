@@ -16,7 +16,7 @@
 
 #include "cyber/py_wrapper/py_cyber.h"
 
-#include <Python.h>
+#include <Python.h>  //20200330: create python module in cc
 #include <string>
 #include <vector>
 
@@ -29,7 +29,7 @@ using apollo::cyber::PyService;
 using apollo::cyber::PyServiceUtils;
 using apollo::cyber::PyWriter;
 
-#if PY_MAJOR_VERSION >= 3
+#if PY_MAJOR_VERSION >= 3  // python3 is different from python2
 #define PyInt_AsLong PyLong_AsLong
 #define PyInt_FromLong PyLong_FromLong
 #define PYOBJECT_NULL_STRING PyBytes_FromStringAndSize("", 0)
