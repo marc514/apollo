@@ -1,5 +1,7 @@
 # How to create and run a new component in Apollo Cyber RT
 
+> 20200401: there is chinese version
+
 Apollo Cyber RT framework is built based on the concept of component. As a basic building block of Apollo Cyber RT framework, each component contains a specific algorithm module which process a set of data inputs and generate a set of outputs.
 
 In order to successfully create and launch a new component, there are four essential steps that need to happen:
@@ -180,6 +182,7 @@ There are two ways to launch the component:
 ```bash
 cyber_launch start /apollo/cyber/examples/common_component_example/common.launch
 ```
+> 20200401: cyber_launch (.py) to call mainboard -d (.dag)
 
 - Launch with the DAG file
 
