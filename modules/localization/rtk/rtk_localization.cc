@@ -76,7 +76,7 @@ void RTKLocalization::GpsCallback(
       return;
     }
   }
-
+  // fromMarc: PrepareLocalizationMsg() is the core
   // publish localization messages
   PrepareLocalizationMsg(*gps_msg, &last_localization_result_,
                          &last_localization_status_result_);
@@ -178,11 +178,15 @@ void RTKLocalization::PrepareLocalizationMsg(
   // find the matching gps and imu message
   double gps_time_stamp = gps_msg.header().timestamp_sec();
   CorrectedImu imu_msg;
+  // 1. find the matching imu_msg with gps_time_stamp
   FindMatchingIMU(gps_time_stamp, &imu_msg);
+  // 2. compose localization_msg with gps_msg and imu_msg
   ComposeLocalizationMsg(gps_msg, imu_msg, localization);
 
   drivers::gnss::InsStat gps_status;
+  // 3. find the nearest gps_status(=ins_status) with gps_time_stamp
   FindNearestGpsStatus(gps_time_stamp, &gps_status);
+  // 4. fill localization_status_msg with gps_status
   FillLocalizationStatusMsg(gps_status, localization_status);
 }
 
@@ -239,10 +243,12 @@ void RTKLocalization::ComposeLocalizationMsg(
   localization->set_measurement_time(gps_msg.header().timestamp_sec());
 
   // combine gps and imu
+  // fromMarc: just combine imu_msg acc?
+  // where to correct gps_value by imu_value? in INS?
   auto mutable_pose = localization->mutable_pose();
   if (gps_msg.has_localization()) {
     const auto &pose = gps_msg.localization();
-
+    // 1. get position from gps_msg  ----fromMarc
     if (pose.has_position()) {
       // position
       // world frame -> map frame
@@ -253,7 +259,8 @@ void RTKLocalization::ComposeLocalizationMsg(
       mutable_pose->mutable_position()->set_z(pose.position().z() -
                                               map_offset_[2]);
     }
-
+    // 2. get orientation from gps_msg  ----fromMarc
+    //    and do QuaternionToHeading()  ----四元数-->heading
     // orientation
     if (pose.has_orientation()) {
       mutable_pose->mutable_orientation()->CopyFrom(pose.orientation());
@@ -262,6 +269,7 @@ void RTKLocalization::ComposeLocalizationMsg(
           pose.orientation().qy(), pose.orientation().qz());
       mutable_pose->set_heading(heading);
     }
+    // 3. get linear velocity from gps_msg  ----fromMarc
     // linear velocity
     if (pose.has_linear_velocity()) {
       mutable_pose->mutable_linear_velocity()->CopyFrom(pose.linear_velocity());
@@ -270,11 +278,13 @@ void RTKLocalization::ComposeLocalizationMsg(
 
   if (imu_msg.has_imu()) {
     const auto &imu = imu_msg.imu();
+    // 4. get linear_acceleration from imu_msg  ----fromMarc
     // linear acceleration
     if (imu.has_linear_acceleration()) {
       if (localization->pose().has_orientation()) {
         // linear_acceleration:
         // convert from vehicle reference to map reference
+        // call Eigen::Vector3d QuaternionRotate()  ----四元数
         Vector3d orig(imu.linear_acceleration().x(),
                       imu.linear_acceleration().y(),
                       imu.linear_acceleration().z());
@@ -283,7 +293,7 @@ void RTKLocalization::ComposeLocalizationMsg(
         mutable_pose->mutable_linear_acceleration()->set_x(vec[0]);
         mutable_pose->mutable_linear_acceleration()->set_y(vec[1]);
         mutable_pose->mutable_linear_acceleration()->set_z(vec[2]);
-
+        // vrf means vehicle_reference?  ----fromMarc
         // linear_acceleration_vfr
         mutable_pose->mutable_linear_acceleration_vrf()->CopyFrom(
             imu.linear_acceleration());
@@ -292,7 +302,7 @@ void RTKLocalization::ComposeLocalizationMsg(
                << "fail to convert linear_acceleration";
       }
     }
-
+    // 5. get angular_velocity from imu_msg  ----fromMarc
     // angular velocity
     if (imu.has_angular_velocity()) {
       if (localization->pose().has_orientation()) {
@@ -313,7 +323,7 @@ void RTKLocalization::ComposeLocalizationMsg(
         AERROR << "[PrepareLocalizationMsg]: fail to convert angular_velocity";
       }
     }
-
+    // 6. get euler_angles from imu_msg  ----fromMarc
     // euler angle
     if (imu.has_euler_angles()) {
       mutable_pose->mutable_euler_angles()->CopyFrom(imu.euler_angles());
@@ -327,7 +337,7 @@ bool RTKLocalization::FindMatchingIMU(const double gps_timestamp_sec,
     AERROR << "imu_msg should NOT be nullptr.";
     return false;
   }
-
+  // add lock
   std::unique_lock<std::mutex> lock(imu_list_mutex_);
   auto imu_list = imu_list_;
   lock.unlock();
@@ -341,6 +351,7 @@ bool RTKLocalization::FindMatchingIMU(const double gps_timestamp_sec,
 
   // scan imu buffer, find first imu message that is newer than the given
   // timestamp
+  // std::numeric_limits<double>::min() is a double value >0
   auto imu_it = imu_list.begin();
   for (; imu_it != imu_list.end(); ++imu_it) {
     if ((*imu_it).header().timestamp_sec() - gps_timestamp_sec >
@@ -358,7 +369,7 @@ bool RTKLocalization::FindMatchingIMU(const double gps_timestamp_sec,
              << gps_timestamp_sec << "]";
       *imu_msg = imu_list.front();  // the oldest imu
     } else {
-      // here is the normal case
+      // here is the normal case! do InterpolateIMU()插值
       auto imu_it_1 = imu_it;
       imu_it_1--;
       if (!(*imu_it).has_header() || !(*imu_it_1).has_header()) {
@@ -417,6 +428,7 @@ bool RTKLocalization::InterpolateIMU(const CorrectedImu &imu1,
            << imu2.header().timestamp_sec() << "]";
     *imu_msg = imu1;
   } else {
+    // here is the normal case! do InterpolateXYZ()
     *imu_msg = imu1;
     imu_msg->mutable_header()->set_timestamp_sec(timestamp_sec);
 
@@ -425,7 +437,7 @@ bool RTKLocalization::InterpolateIMU(const CorrectedImu &imu1,
     if (fabs(time_diff) >= 0.001) {
       double frac1 =
           (timestamp_sec - imu1.header().timestamp_sec()) / time_diff;
-
+      // InterpolateXYZ()分别对角速度、线性加速度、欧拉角进行插值
       if (imu1.imu().has_angular_velocity() &&
           imu2.imu().has_angular_velocity()) {
         auto val = InterpolateXYZ(imu1.imu().angular_velocity(),
@@ -453,6 +465,7 @@ bool RTKLocalization::InterpolateIMU(const CorrectedImu &imu1,
 template <class T>
 T RTKLocalization::InterpolateXYZ(const T &p1, const T &p2,
                                   const double frac1) {
+  // 线性插值，根据距离frac1、frac2
   T p;
   double frac2 = 1.0 - frac1;
   if (p1.has_x() && !std::isnan(p1.x()) && p2.has_x() && !std::isnan(p2.x())) {
@@ -474,7 +487,7 @@ bool RTKLocalization::FindNearestGpsStatus(const double gps_timestamp_sec,
   std::unique_lock<std::mutex> lock(gps_status_list_mutex_);
   auto gps_status_list = gps_status_list_;
   lock.unlock();
-
+  // find nearest gps_status from begin to end. Why?  ----fromMarc
   double timestamp_diff_sec = 1e8;
   auto nearest_itr = gps_status_list.end();
   for (auto itr = gps_status_list.begin(); itr != gps_status_list.end();
