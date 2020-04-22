@@ -62,11 +62,15 @@ bool RTKLocalizationComponent::InitConfig() {
 }
 
 bool RTKLocalizationComponent::InitIO() {
+  // 在gnss driver中DataParser类通过PublishCorrimu发布IMU的消息，
+  // 而corrected_imu_listener_中绑定了ImuCallback，
+  // 当读取imu_topic_时，数据进入imu_list_
   corrected_imu_listener_ = node_->CreateReader<localization::CorrectedImu>(
       imu_topic_, std::bind(&RTKLocalization::ImuCallback, localization_.get(),
                             std::placeholders::_1));
   CHECK(corrected_imu_listener_);
-
+  // 而gps_status_listener_中绑定了GpsStatusCallback，
+  // 当读取gps_status_topic_时，数据进入gps_status_list_
   gps_status_listener_ = node_->CreateReader<drivers::gnss::InsStat>(
       gps_status_topic_, std::bind(&RTKLocalization::GpsStatusCallback,
                                    localization_.get(), std::placeholders::_1));
@@ -85,7 +89,7 @@ bool RTKLocalizationComponent::InitIO() {
 bool RTKLocalizationComponent::Proc(
     const std::shared_ptr<localization::Gps>& gps_msg) {
   // fromMarc: when Proc() be called by CyberRT(other modules), 
-  // this <RTKLocalization>->GpsCallback() will update "GPS" msg.
+  // this <RTKLocalization>->GpsCallback() will update gps_msg.
   localization_->GpsCallback(gps_msg);
 
   if (localization_->IsServiceStarted()) {
