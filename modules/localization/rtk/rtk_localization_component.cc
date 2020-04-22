@@ -84,6 +84,8 @@ bool RTKLocalizationComponent::InitIO() {
 
 bool RTKLocalizationComponent::Proc(
     const std::shared_ptr<localization::Gps>& gps_msg) {
+  // fromMarc: when Proc() be called by CyberRT(other modules), 
+  // this <RTKLocalization>->GpsCallback() will update "GPS" msg.
   localization_->GpsCallback(gps_msg);
 
   if (localization_->IsServiceStarted()) {
