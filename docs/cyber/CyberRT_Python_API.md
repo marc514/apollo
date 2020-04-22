@@ -222,6 +222,8 @@ class Timer(object):
 
 ### 4.1 Read from Channel (in cyber/python/examples/listener.py)
 
+> it's much more easier to applicate the data in channels
+
 ```python
 import sys
 sys.path.append("../")
