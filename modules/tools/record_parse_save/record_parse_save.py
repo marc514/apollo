@@ -10,6 +10,9 @@ current implementation illustrates sample record file parsing for
 * saves radar and lidar data in respective folders in *.txt format for each scan
 * also saves timestamp in separate text files
 
+by cyber_API_python, get msg from channels in 'parser_params.yaml'
+cyber_API_python is different between apollo3.5 and 5.5.
+
 """
 
 ###########################################################
