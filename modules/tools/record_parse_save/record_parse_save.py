@@ -38,19 +38,19 @@ def read_parameters(yaml_file):
 
     # define destinations
     dest_path = os.path.split(RECORD_FOLDER)
+    # print dest_path  # os.path split RECORD_FOLDER by '/' --> ('/apollo/data/xxx','')
     if not dest_path[-1]:
-        dest_path = os.path.split(dest_path[0])
+        dest_path = os.path.split(dest_path[0])  # --> ('/apollo/data','xxx')
 
-    OUT_FOLDER = dest_path[0] + '/'
-    temp_path = os.path.split(dest_path[0])
+    OUT_FOLDER = dest_path[0] + '/'  # --> ('/apollo/data/')
+    temp_path = os.path.split(dest_path[0])  # --> ('/apollo', 'data')
     FOLDER_PREFIX = temp_path[1].replace("-", "")
 
-    parse_dict = {"params": params,
-                    "parse_type": parse_type,
-                    "out_folder": OUT_FOLDER,
-                    "prefix": FOLDER_PREFIX,
-                    "record_folder": RECORD_FOLDER }
-
+    parse_dict = {"params": params,                     # --> {'zhengwen'}
+                    "parse_type": parse_type,           # --> 'location_imu'
+                    "out_folder": OUT_FOLDER,           # --> '/apollo/data/'
+                    "prefix": FOLDER_PREFIX,            # --> 'data'
+                    "record_folder": RECORD_FOLDER }    # --> '/apollo/data/2020-04-23/' 
     return parse_dict
 
 ###########################################################
@@ -74,6 +74,9 @@ def define_destinations(parse_dict):
     dest_dict['channel_name'] = params[parse_type]['channel_name']
     dest_dict['timestamp_file'] = dest_folder + prefix + params[parse_type]['timestamp_file_extn']
     dest_dict['destination_folder'] = dest_folder + prefix + params[parse_type]['out_folder_extn'] + '/'
+    # --> {'channel_name': '/apollo/sensor/gnss/imu', 
+    #       'destination_folder': '/apollo/data/data_gnss_bestpose/', 
+    #       'timestamp_file': '/apollo/data/data_gnss_bestpose_timestamp.txt'}
 
     if not os.path.exists(dest_dict["destination_folder"]):
             os.makedirs(dest_dict["destination_folder"])
@@ -82,13 +85,11 @@ def define_destinations(parse_dict):
 
 ###########################################################
 def parse_apollo_record(parse_dict, dest_dict, parser_func):
-    """
-    """
-    record_folder_path = parse_dict["record_folder"]
-    parse_type = parse_dict["parse_type"]
-    record_files = sorted(os.listdir(parse_dict["record_folder"]))
+    record_folder_path = parse_dict["record_folder"]              # --> '/apollo/data/2020-04-23/'
+    parse_type = parse_dict["parse_type"]                         # --> 'location_imu'
+    record_files = sorted(os.listdir(parse_dict["record_folder"]))# sorted 
     parse_timestamp = []
-    parse_mod = import_module(parser_func)
+    parse_mod = import_module(parser_func)                        # import parser_location_imu
 
     print("=" *60)
     print('--------- Parsing data for: ' + parse_type + ' ---------')
@@ -101,6 +102,7 @@ def parse_apollo_record(parse_dict, dest_dict, parser_func):
 
         for channelname, msg, datatype, timestamp in freader.read_messages():
             if channelname == dest_dict["channel_name"]:
+                # parse_data by module imported
                 tstamp = parse_mod.parse_data(channelname, msg, dest_dict['destination_folder'])
                 parse_timestamp.append(tstamp)
 
