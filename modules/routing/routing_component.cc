@@ -25,7 +25,7 @@ DECLARE_string(flagfile);
 
 namespace apollo {
 namespace routing {
-
+// Init()
 bool RoutingComponent::Init() {
   apollo::cyber::proto::RoleAttributes attr;
   attr.set_channel_name(FLAGS_routing_response_topic);
@@ -69,9 +69,10 @@ bool RoutingComponent::Init() {
 
   return routing_.Init().ok() && routing_.Start().ok();
 }
-
+// Proc()
 bool RoutingComponent::Proc(const std::shared_ptr<RoutingRequest>& request) {
   auto response = std::make_shared<RoutingResponse>();
+  // Routing::Process()
   if (!routing_.Process(request, response.get())) {
     return false;
   }

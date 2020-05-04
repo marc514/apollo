@@ -90,6 +90,7 @@ bool Routing::Process(const std::shared_ptr<RoutingRequest>& routing_request,
   CHECK_NOTNULL(routing_response);
   AINFO << "Get new routing request:" << routing_request->DebugString();
   const auto& fixed_request = FillLaneInfoIfMissing(*routing_request);
+  // 
   if (!navigator_ptr_->SearchRoute(fixed_request, routing_response)) {
     AERROR << "Failed to search route with navigator.";
 
