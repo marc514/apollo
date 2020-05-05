@@ -32,6 +32,8 @@ Routing::Routing()
 apollo::common::Status Routing::Init() {
   const auto routing_map_file = apollo::hdmap::RoutingMapFile();
   AINFO << "Use routing topology graph path: " << routing_map_file;
+  // Navigator::Navigator(apollo::hdmap::RoutingMapFile())
+  // call TopoGraph::LoadGraph(Node/Edge)
   navigator_ptr_.reset(new Navigator(routing_map_file));
   CHECK(
       cyber::common::GetProtoFromFile(FLAGS_routing_conf_file, &routing_conf_))
@@ -90,7 +92,7 @@ bool Routing::Process(const std::shared_ptr<RoutingRequest>& routing_request,
   CHECK_NOTNULL(routing_response);
   AINFO << "Get new routing request:" << routing_request->DebugString();
   const auto& fixed_request = FillLaneInfoIfMissing(*routing_request);
-  // 
+  // Navigator::SearchRoute()
   if (!navigator_ptr_->SearchRoute(fixed_request, routing_response)) {
     AERROR << "Failed to search route with navigator.";
 

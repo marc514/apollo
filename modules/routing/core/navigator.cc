@@ -93,6 +93,7 @@ void PrintDebugData(const std::vector<NodeWithRange>& nodes) {
 }  // namespace
 
 Navigator::Navigator(const std::string& topo_file_path) {
+  // read topology graph from /map/data/xxx_base_map.bin
   Graph graph;
   if (!cyber::common::GetProtoFromFile(topo_file_path, &graph)) {
     AERROR << "Failed to read topology graph from " << topo_file_path;
@@ -164,9 +165,10 @@ bool Navigator::SearchRouteByStrategy(
     double way_end_s = way_s[i];
 
     TopoRangeManager full_range_manager = topo_range_manager_;
+    // BlackListRangeGenerator::AddBlackMapFromTerminal()
     black_list_generator_->AddBlackMapFromTerminal(
         way_start, way_end, way_start_s, way_end_s, &full_range_manager);
-
+    // SubTopoGraph::sub_graph
     SubTopoGraph sub_graph(full_range_manager.RangeMap());
     const auto* start = sub_graph.GetSubNodeWithS(way_start, way_start_s);
     if (start == nullptr) {
@@ -180,7 +182,7 @@ bool Navigator::SearchRouteByStrategy(
              << way_end->LaneId() << ", s:" << way_end_s;
       return false;
     }
-
+    // ! A* AStarStrategy::Search()
     std::vector<NodeWithRange> cur_result_nodes;
     if (!strategy_ptr->Search(graph, &sub_graph, start, end,
                               &cur_result_nodes)) {
@@ -199,7 +201,7 @@ bool Navigator::SearchRouteByStrategy(
   }
   return true;
 }
-
+// called by Routing::Process()
 bool Navigator::SearchRoute(const RoutingRequest& request,
                             RoutingResponse* const response) {
   if (!ShowRequestInfo(request, graph_.get())) {
@@ -216,6 +218,7 @@ bool Navigator::SearchRoute(const RoutingRequest& request,
   }
   std::vector<const TopoNode*> way_nodes;
   std::vector<double> way_s;
+  // Init() call GetWayNodes() and GenerateBlackMapFromRequest()
   if (!Init(request, graph_.get(), &way_nodes, &way_s)) {
     SetErrorCode(ErrorCode::ROUTING_ERROR_NOT_READY,
                  "Failed to initialize navigator!", response->mutable_status());
@@ -223,6 +226,7 @@ bool Navigator::SearchRoute(const RoutingRequest& request,
   }
 
   std::vector<NodeWithRange> result_nodes;
+  // ! SearchRouteByStrategy() is the Strategy
   if (!SearchRouteByStrategy(graph_.get(), way_nodes, way_s, &result_nodes)) {
     SetErrorCode(ErrorCode::ROUTING_ERROR_RESPONSE,
                  "Failed to find route with request!",
