@@ -35,6 +35,7 @@ bool RoutingComponent::Init() {
       apollo::cyber::proto::QosReliabilityPolicy::RELIABILITY_RELIABLE);
   qos->set_durability(
       apollo::cyber::proto::QosDurabilityPolicy::DURABILITY_TRANSIENT_LOCAL);
+  // response_writer_消息发布
   response_writer_ = node_->CreateWriter<RoutingResponse>(attr);
 
   apollo::cyber::proto::RoleAttributes attr_history;
@@ -46,8 +47,10 @@ bool RoutingComponent::Init() {
       apollo::cyber::proto::QosReliabilityPolicy::RELIABILITY_RELIABLE);
   qos_history->set_durability(
       apollo::cyber::proto::QosDurabilityPolicy::DURABILITY_TRANSIENT_LOCAL);
-
+  // response_history_writer_历史消息发布
   response_history_writer_ = node_->CreateWriter<RoutingResponse>(attr_history);
+  
+  // timer 定时器 没看懂
   std::weak_ptr<RoutingComponent> self =
       std::dynamic_pointer_cast<RoutingComponent>(shared_from_this());
   timer_.reset(new ::apollo::cyber::Timer(
