@@ -34,6 +34,7 @@ class RoutingComponent final
   bool Proc(const std::shared_ptr<RoutingRequest>& request) override;
 
  private:
+  // ‘::’位于开头 means 全局命名空间
   std::shared_ptr<::apollo::cyber::Writer<RoutingResponse>> response_writer_ =
       nullptr;
   std::shared_ptr<::apollo::cyber::Writer<RoutingResponse>>
