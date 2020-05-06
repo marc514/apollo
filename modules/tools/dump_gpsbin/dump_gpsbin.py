@@ -23,6 +23,7 @@ Usage:
     dump_gpsbin.py --input_file=a.record --output_dir=dir
 
 See the gflags for more optional args.
+easy!
 """
 
 import os
