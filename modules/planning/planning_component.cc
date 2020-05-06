@@ -89,7 +89,7 @@ bool PlanningComponent::Init() {
 
   return true;
 }
-
+// Proc() is PlanningComponent Entrance for cyber
 bool PlanningComponent::Proc(
     const std::shared_ptr<prediction::PredictionObstacles>&
         prediction_obstacles,
