@@ -122,10 +122,12 @@ bool Navigator::Init(const RoutingRequest& request, const TopoGraph* graph,
                      std::vector<const TopoNode*>* const way_nodes,
                      std::vector<double>* const way_s) {
   Clear();
+  // 根据RoutingRequest，获取graph中的node
   if (!GetWayNodes(request, graph_.get(), way_nodes, way_s)) {
     AERROR << "Failed to find search terminal point in graph!";
     return false;
   }
+  // 根据RoutingRequest，GenerateBlackMapFromRequest
   black_list_generator_->GenerateBlackMapFromRequest(request, graph_.get(),
                                                      &topo_range_manager_);
   return true;
@@ -154,10 +156,11 @@ bool Navigator::SearchRouteByStrategy(
     const std::vector<double>& way_s,
     std::vector<NodeWithRange>* const result_nodes) const {
   std::unique_ptr<Strategy> strategy_ptr;
+  // strategy_ptr --> AStarStrategy
   strategy_ptr.reset(new AStarStrategy(FLAGS_enable_change_lane_in_result));
-
   result_nodes->clear();
   std::vector<NodeWithRange> node_vec;
+
   for (size_t i = 1; i < way_nodes.size(); ++i) {
     const auto* way_start = way_nodes[i - 1];
     const auto* way_end = way_nodes[i];
@@ -165,24 +168,26 @@ bool Navigator::SearchRouteByStrategy(
     double way_end_s = way_s[i];
 
     TopoRangeManager full_range_manager = topo_range_manager_;
-    // BlackListRangeGenerator::AddBlackMapFromTerminal()
+    // AddBlackMapFromTerminal()保存到full_range_manager
     black_list_generator_->AddBlackMapFromTerminal(
         way_start, way_end, way_start_s, way_end_s, &full_range_manager);
-    // SubTopoGraph::sub_graph
+    // SubTopoGraph创建子图sub_graph
     SubTopoGraph sub_graph(full_range_manager.RangeMap());
+    // sub_graph获取起点
     const auto* start = sub_graph.GetSubNodeWithS(way_start, way_start_s);
     if (start == nullptr) {
       AERROR << "Sub graph node is nullptr, origin node id: "
              << way_start->LaneId() << ", s:" << way_start_s;
       return false;
     }
+    // sub_graph获取终点
     const auto* end = sub_graph.GetSubNodeWithS(way_end, way_end_s);
     if (end == nullptr) {
       AERROR << "Sub graph node is nullptr, origin node id: "
              << way_end->LaneId() << ", s:" << way_end_s;
       return false;
     }
-    // ! A* AStarStrategy::Search()
+    // ! A*获取最优路径 AStarStrategy::Search()
     std::vector<NodeWithRange> cur_result_nodes;
     if (!strategy_ptr->Search(graph, &sub_graph, start, end,
                               &cur_result_nodes)) {
@@ -190,11 +195,11 @@ bool Navigator::SearchRouteByStrategy(
              << " to " << end->LaneId();
       return false;
     }
-
+    // 保存结果到node_vec
     node_vec.insert(node_vec.end(), cur_result_nodes.begin(),
                     cur_result_nodes.end());
   }
-
+  // MergeRoute合并Route
   if (!MergeRoute(node_vec, result_nodes)) {
     AERROR << "Failed to merge route.";
     return false;

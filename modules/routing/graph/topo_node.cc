@@ -151,7 +151,7 @@ void TopoNode::SetAnchorPoint(const common::PointENU& anchor_point) {
 }
 
 const Node& TopoNode::PbNode() const { return pb_node_; }
-
+// pb_node_是在topo_graph.proto文件中定义的Node类，其方法length()由protobuf自动生成
 double TopoNode::Length() const { return pb_node_.length(); }
 
 double TopoNode::Cost() const { return pb_node_.cost(); }

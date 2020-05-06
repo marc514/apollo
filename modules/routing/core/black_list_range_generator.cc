@@ -115,7 +115,7 @@ void AddBlackMapFromInParallel(const TopoNode* node, double cut_ratio,
 }
 
 }  // namespace
-
+// 根据request传入黑名单，每次直接屏蔽一整条road或者lane
 void BlackListRangeGenerator::GenerateBlackMapFromRequest(
     const RoutingRequest& request, const TopoGraph* graph,
     TopoRangeManager* const range_manager) const {
@@ -123,10 +123,12 @@ void BlackListRangeGenerator::GenerateBlackMapFromRequest(
   AddBlackMapFromRoad(request, graph, range_manager);
   range_manager->SortAndMerge();
 }
-
+// 根据request传入的点对lane做切割，每次切割的区间的起点和终点重合，
+// 是一个特殊场景，后续应该有用到比如在一条lane里，有某一段不能行驶的功能
 void BlackListRangeGenerator::AddBlackMapFromTerminal(
     const TopoNode* src_node, const TopoNode* dest_node, double start_s,
     double end_s, TopoRangeManager* const range_manager) const {
+  // TopoNode::Length() return Node::length()
   double start_length = src_node->Length();
   double end_length = dest_node->Length();
   if (start_s < 0.0 || start_s > start_length) {

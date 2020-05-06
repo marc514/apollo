@@ -91,8 +91,10 @@ bool Routing::Process(const std::shared_ptr<RoutingRequest>& routing_request,
                       RoutingResponse* const routing_response) {
   CHECK_NOTNULL(routing_response);
   AINFO << "Get new routing request:" << routing_request->DebugString();
+  // call HDMap::GetNearestLane() 
+  // 先查看routing_request的点是否在路上，不在路上则找到离起点最近的道路
   const auto& fixed_request = FillLaneInfoIfMissing(*routing_request);
-  // Navigator::SearchRoute()
+  // call Navigator::SearchRoute()
   if (!navigator_ptr_->SearchRoute(fixed_request, routing_response)) {
     AERROR << "Failed to search route with navigator.";
 
