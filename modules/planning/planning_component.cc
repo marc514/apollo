@@ -89,7 +89,14 @@ bool PlanningComponent::Init() {
 
   return true;
 }
-// Proc() is PlanningComponent Entrance for cyber
+// Proc() is PlanningComponent Entrance for cyber, 
+// input:
+// 1.PredictionObstacles
+// 2.Chassis
+// 3.LocalizationEstimate
+// (4.地图信息不在输入参数中，在函数中读取)
+// output:
+// planning_writer_(std::make_shared<ADCTrajectory>adc_trajectory_pb)
 bool PlanningComponent::Proc(
     const std::shared_ptr<prediction::PredictionObstacles>&
         prediction_obstacles,
@@ -100,7 +107,9 @@ bool PlanningComponent::Proc(
 
   // check and process possible rerouting request
   CheckRerouting();
-
+  // from input std::make_shared<routing::RoutingResponse>(routing_)
+  // routing_.CopyFrom(std::shared_ptr<RoutingResponse>& routing) 
+  // from RoutingResponse or TrafficLight or relativeMap or Pad
   // process fused input data
   local_view_.prediction_obstacles = prediction_obstacles;
   local_view_.chassis = chassis;
@@ -128,7 +137,7 @@ bool PlanningComponent::Proc(
     AERROR << "Input check failed";
     return false;
   }
-
+  // process output data
   ADCTrajectory adc_trajectory_pb;
   planning_base_->RunOnce(local_view_, &adc_trajectory_pb);
   auto start_time = adc_trajectory_pb.header().timestamp_sec();
