@@ -37,6 +37,7 @@ using apollo::routing::RoutingRequest;
 using apollo::routing::RoutingResponse;
 
 bool PlanningComponent::Init() {
+  // 根据配置FLAG选择不同的planner
   if (FLAGS_use_navigation_mode) {
     planning_base_ = std::make_unique<NaviPlanning>();
   } else {
