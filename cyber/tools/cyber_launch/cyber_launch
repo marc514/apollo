@@ -129,7 +129,7 @@ class ProcessWrapper(object):
     def wait(self):
         if self.started:
             self.popen.wait()
-
+    # ProcessWrapper::start()起守护线程
     def start(self):
         """
         Start a manager in process name
@@ -409,7 +409,7 @@ def start(launch_file=''):
         logger.info('Load module [%s] %s: [%s] [%s] conf: [%s] exception_handler: [%s]' %
                     (module_name, process_type, process_name, sched_name, dag_conf,
                      exception_handler))
-
+        # start() call ProcessWrapper()
         if process_name not in process_list:
             if process_type == 'binary':
                 if len(process_name) == 0:
@@ -505,7 +505,7 @@ def main():
     #                            default is cyber.launch')
 
     params = parser.parse_args(sys.argv[1:])
-
+    # cyber_launch call start()
     command = sys.argv[1]
     if command == 'start':
         start(params.file)

@@ -87,7 +87,8 @@ bool ModuleController::LoadModule(const DagConfig& dag_config) {
       AERROR << "Path does not exist: " << load_path;
       return false;
     }
-
+    // ClassLoaderManager::LoadLibrary() and CreateClassObj()
+    // base->Initialize call component::Init()
     class_loader_manager_.LoadLibrary(load_path);
 
     for (auto& component : module_config.components()) {
