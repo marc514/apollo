@@ -51,6 +51,7 @@ namespace planning {
  *
  * @brief PlanningBase module main class.
  */
+// doxygen 注释生成文档
 class PlanningBase {
  public:
   PlanningBase() = default;
@@ -84,6 +85,7 @@ class PlanningBase {
 
   PlanningConfig config_;
   TrafficRuleConfigs traffic_rule_configs_;
+  // Frame信息帧里面也有LocalView，和上面的local_view重复？
   std::unique_ptr<Frame> frame_;
   std::unique_ptr<Planner> planner_;
   std::unique_ptr<PublishableTrajectory> last_publishable_trajectory_;
