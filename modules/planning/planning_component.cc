@@ -37,7 +37,8 @@ using apollo::routing::RoutingRequest;
 using apollo::routing::RoutingResponse;
 
 bool PlanningComponent::Init() {
-  // 根据配置FLAG选择不同的planner
+  // 根据配置FLAG选择不同的planning_base
+  // OnLanePlanning:项目常用；NaviPlanning：无道路高精地图情况下
   if (FLAGS_use_navigation_mode) {
     planning_base_ = std::make_unique<NaviPlanning>();
   } else {
@@ -48,7 +49,7 @@ bool PlanningComponent::Init() {
                                                 &config_))
       << "failed to load planning config file " << FLAGS_planning_config_file;
   planning_base_->Init(config_);
-
+  // cyber::node->CreateReader<RoutingResponse>
   routing_reader_ = node_->CreateReader<RoutingResponse>(
       FLAGS_routing_response_topic,
       [this](const std::shared_ptr<RoutingResponse>& routing) {
@@ -57,6 +58,7 @@ bool PlanningComponent::Init() {
         std::lock_guard<std::mutex> lock(mutex_);
         routing_.CopyFrom(*routing);
       });
+  // cyber::node->CreateReader<TrafficLightDetection>
   traffic_light_reader_ = node_->CreateReader<TrafficLightDetection>(
       FLAGS_traffic_light_detection_topic,
       [this](const std::shared_ptr<TrafficLightDetection>& traffic_light) {
@@ -64,7 +66,7 @@ bool PlanningComponent::Init() {
         std::lock_guard<std::mutex> lock(mutex_);
         traffic_light_.CopyFrom(*traffic_light);
       });
-
+  // cyber::node->CreateReader<PadMessage>
   pad_msg_reader_ = node_->CreateReader<PadMessage>(
       FLAGS_planning_pad_topic,
       [this](const std::shared_ptr<PadMessage>& pad_msg) {
@@ -72,7 +74,7 @@ bool PlanningComponent::Init() {
         std::lock_guard<std::mutex> lock(mutex_);
         pad_msg_.CopyFrom(*pad_msg);
       });
-
+  // if use_navigation_mode(无道路高精地图)则 read relative_map相对地图
   if (FLAGS_use_navigation_mode) {
     relative_map_reader_ = node_->CreateReader<MapMsg>(
         FLAGS_relative_map_topic,
@@ -82,9 +84,10 @@ bool PlanningComponent::Init() {
           relative_map_.CopyFrom(*map_message);
         });
   }
+  // cyber::node->CreateWriter<ADCTrajectory>发布消息
   planning_writer_ =
       node_->CreateWriter<ADCTrajectory>(FLAGS_planning_trajectory_topic);
-
+  // cyber::node->CreateWriter<RoutingRequest>发布消息rerouting请求
   rerouting_writer_ =
       node_->CreateWriter<RoutingRequest>(FLAGS_routing_request_topic);
 
@@ -105,13 +108,14 @@ bool PlanningComponent::Proc(
     const std::shared_ptr<localization::LocalizationEstimate>&
         localization_estimate) {
   CHECK(prediction_obstacles != nullptr);
-
   // check and process possible rerouting request
+  // 1.检查是否需要rerouting
   CheckRerouting();
   // from input std::make_shared<routing::RoutingResponse>(routing_)
   // routing_.CopyFrom(std::shared_ptr<RoutingResponse>& routing) 
   // from RoutingResponse or TrafficLight or relativeMap or Pad
   // process fused input data
+  // 2.数据放入local_view中
   local_view_.prediction_obstacles = prediction_obstacles;
   local_view_.chassis = chassis;
   local_view_.localization_estimate = localization_estimate;
@@ -139,11 +143,12 @@ bool PlanningComponent::Proc(
     return false;
   }
   // process output data
+  // 3.执行RunOnce(planning_base_指向不同子类)，生成ADCTrajectory
   ADCTrajectory adc_trajectory_pb;
   planning_base_->RunOnce(local_view_, &adc_trajectory_pb);
   auto start_time = adc_trajectory_pb.header().timestamp_sec();
   common::util::FillHeader(node_->Name(), &adc_trajectory_pb);
-
+  // 4.消息发布
   // modify trajectory relative time due to the timestamp change in header
   const double dt = start_time - adc_trajectory_pb.header().timestamp_sec();
   for (auto& p : *adc_trajectory_pb.mutable_trajectory_point()) {

@@ -100,11 +100,11 @@ Status OnLanePlanning::Init(const PlanningConfig& config) {
   // load map
   hdmap_ = HDMapUtil::BaseMapPtr();
   CHECK(hdmap_) << "Failed to load map";
-
+  // 启动ReferenceLineProvider，另启一个线程，执行定时任务，每隔50ms提供一次参考线
   // instantiate reference line provider
   reference_line_provider_ = std::make_unique<ReferenceLineProvider>(hdmap_);
   reference_line_provider_->Start();
-
+  // 为Planning分配具体的Planner
   // dispatch planner
   planner_ = planner_dispatcher_->DispatchPlanner();
   if (!planner_) {
