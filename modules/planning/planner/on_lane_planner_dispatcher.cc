@@ -18,6 +18,14 @@
 #include "cyber/common/file.h"
 #include "modules/planning/common/planning_gflags.h"
 #include "modules/planning/proto/planning_config.pb.h"
+// 通过编译生成的planning_config.pb.h，读取/planning/conf/planning_config.pb.txt
+/**********！！！求解
+ * standard_planning_config {
+ *  planner_type: PUBLIC_ROAD
+ *  planner_public_road_config {
+ *  }
+ *}
+**********/
 
 namespace apollo {
 namespace planning {
@@ -29,7 +37,7 @@ std::unique_ptr<Planner> OnLanePlannerDispatcher::DispatchPlanner() {
   if (!res_load_config) {
     return nullptr;
   }
-
+  // planner_factory_创建PUBLIC_ROAD planner
   return planner_factory_.CreateObject(
       planning_config.standard_planning_config().planner_type(0));
 }
