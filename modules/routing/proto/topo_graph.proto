@@ -43,3 +43,13 @@ message Graph {
   repeated Node node = 3;
   repeated Edge edge = 4;
 }
+
+
+
+/***
+CurvePoint 	曲线上的一个点。
+CurveRange 	曲线上的一段。
+Node 	车道上的一个节点，包含了所属车道，道路，长度，曲线起止点，中心线等信息。
+Edge 	连接车道之间的边，包含了起止车道id，代价和方向等信息。
+Graph 	完整地图的Topo结构，这其中包含了多个Node和Edge。
+***/

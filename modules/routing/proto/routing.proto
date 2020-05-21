@@ -61,3 +61,16 @@ message RoutingResponse {
   optional bytes map_version = 5;
   optional apollo.common.StatusPb status = 6;
 }
+
+
+
+/***
+LaneWaypoint 	道路上的路径点，包含了id，长度和位置点信息。
+LaneSegment 	道路的一段，包含了id和起止点信息。
+RoutingRequest 	描述了路由请求的信息，一次路由请求可以包含多个路径点。详细结构见下文。
+Measurement 	描述测量的距离。
+ChangeLaneType 	道路的类型，有FORWARD，LEFT，RIGHT三种取值。
+Passage 	一段通路，其中可以包含多个LaneSegment，以及ChangeLaneType。
+RoadSegment 	道路的一段，拥有一个id，并可以包含多个Passage。
+RoutingResponse 	路由请求的响应结果，可以包含多个RoadSegment，距离等信息。
+***/
