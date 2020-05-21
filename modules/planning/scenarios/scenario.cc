@@ -73,6 +73,7 @@ Scenario::ScenarioStatus Scenario::Process(
     scenario_status_ = STATUS_DONE;
     return scenario_status_;
   }
+  // current_stage_->Process (like: LaneFollowStage)
   auto ret = current_stage_->Process(planning_init_point, frame);
   switch (ret) {
     case Stage::ERROR: {

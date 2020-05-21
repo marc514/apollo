@@ -100,12 +100,14 @@ Status OnLanePlanning::Init(const PlanningConfig& config) {
   // load map
   hdmap_ = HDMapUtil::BaseMapPtr();
   CHECK(hdmap_) << "Failed to load map";
-  // 启动ReferenceLineProvider，另启一个线程，执行定时任务，每隔50ms提供一次参考线
-  // instantiate reference line provider
+  // 启动ReferenceLineProvider, instantiate reference line provider
   reference_line_provider_ = std::make_unique<ReferenceLineProvider>(hdmap_);
+  // 另启一个线程，执行定时任务，每隔50ms提供一次参考线
+  // cyber::Async(&ReferenceLineProvider::GenerateThread, this)
   reference_line_provider_->Start();
-  // 为Planning分配具体的Planner
-  // dispatch planner
+
+  // 为Planning分配具体的Planner, dispatch planner
+  // planner_dispatcher_ = make_unique<OnLanePlannerDispatcher>
   planner_ = planner_dispatcher_->DispatchPlanner();
   if (!planner_) {
     return Status(
@@ -256,7 +258,7 @@ void OnLanePlanning::RunOnce(const LocalView& local_view,
           vehicle_state, start_timestamp, planning_cycle_time,
           FLAGS_trajectory_stitching_preserved_length, true,
           last_publishable_trajectory_.get(), &replan_reason);
-
+  // InitFrame初始化帧
   EgoInfo::Instance()->Update(stitching_trajectory.back(), vehicle_state);
   const uint32_t frame_num = static_cast<uint32_t>(seq_num_++);
   status = InitFrame(frame_num, stitching_trajectory.back(), vehicle_state);
@@ -310,7 +312,7 @@ void OnLanePlanning::RunOnce(const LocalView& local_view,
             << " traffic decider failed";
     }
   }
-
+  // Plan执行具体的planner的plan方法
   status = Plan(start_timestamp, stitching_trajectory, ptr_trajectory_pb);
 
   for (const auto& p : ptr_trajectory_pb->trajectory_point()) {
@@ -456,7 +458,7 @@ Status OnLanePlanning::Plan(
     frame_->mutable_open_space_info()->set_debug(ptr_debug);
     frame_->mutable_open_space_info()->sync_debug_instance();
   }
-
+  // 调用具体的(PUBLIC_ROAD)Planner执行
   auto status = planner_->Plan(stitching_trajectory.back(), frame_.get(),
                                ptr_trajectory_pb);
 
