@@ -128,7 +128,7 @@ Stage::StageStatus LaneFollowStage::Process(
       reference_line_info.SetDrivable(false);
       break;
     }
-
+    // 根据参考线规划PlanOnReferenceLine()
     auto cur_status =
         PlanOnReferenceLine(planning_start_point, frame, &reference_line_info);
 
@@ -177,8 +177,10 @@ Status LaneFollowStage::PlanOnReferenceLine(
          << reference_line_info->IsChangeLanePath();
 
   auto ret = Status::OK();
+  // 顺序执行stage中的task_list_
   for (auto* optimizer : task_list_) {
     const double start_timestamp = Clock::NowInSeconds();
+    // 执行Execute
     ret = optimizer->Execute(frame, reference_line_info);
     if (!ret.ok()) {
       AERROR << "Failed to run tasks[" << optimizer->Name()
@@ -231,7 +233,7 @@ Status LaneFollowStage::PlanOnReferenceLine(
       dest_stop_s = dest_sl.s();
     }
   }
-
+  // add_stop_obstacle_cost
   for (const auto* obstacle :
        reference_line_info->path_decision()->obstacles().Items()) {
     if (obstacle->IsVirtual()) {
@@ -266,7 +268,7 @@ Status LaneFollowStage::PlanOnReferenceLine(
       return Status(ErrorCode::PLANNING_ERROR, msg);
     }
   }
-
+  // SetTrajectory返回参考线
   reference_line_info->SetTrajectory(trajectory);
   reference_line_info->SetDrivable(true);
   return Status::OK();

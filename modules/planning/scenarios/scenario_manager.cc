@@ -49,8 +49,10 @@ using apollo::hdmap::HDMapUtil;
 using apollo::hdmap::PathOverlap;
 
 bool ScenarioManager::Init() {
+  // Register Scenarios 注册场景
   RegisterScenarios();
   default_scenario_type_ = ScenarioConfig::LANE_FOLLOW;
+  // Create Scenario 创建场景(默认lane_follow)
   current_scenario_ = CreateScenario(default_scenario_type_);
   return true;
 }
@@ -773,16 +775,16 @@ void ScenarioManager::Observe(const Frame& frame) {
     }
   }
 }
-
+// 场景更新
 void ScenarioManager::Update(const common::TrajectoryPoint& ego_point,
                              const Frame& frame) {
   CHECK(!frame.reference_line_info().empty());
-
+  // 观察当前帧
   Observe(frame);
-
+  // 场景分发 
   ScenarioDispatch(ego_point, frame);
 }
-
+// 场景分发，有限状态机
 void ScenarioManager::ScenarioDispatch(const common::TrajectoryPoint& ego_point,
                                        const Frame& frame) {
   CHECK(!frame.reference_line_info().empty());

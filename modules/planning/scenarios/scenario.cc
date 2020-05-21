@@ -69,11 +69,12 @@ Scenario::ScenarioStatus Scenario::Process(
     AWARN << "Current stage is a null pointer.";
     return STATUS_UNKNOWN;
   }
+  // 如果current_stage完成，则退出
   if (current_stage_->stage_type() == ScenarioConfig::NO_STAGE) {
     scenario_status_ = STATUS_DONE;
     return scenario_status_;
   }
-  // current_stage_->Process (like: LaneFollowStage)
+  // current_stage_错误处理 或者 进入下一阶段执行
   auto ret = current_stage_->Process(planning_init_point, frame);
   switch (ret) {
     case Stage::ERROR: {
