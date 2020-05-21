@@ -78,8 +78,11 @@ Status ControllerAgent::InitializeConf(const ControlConf *control_conf) {
 }
 
 Status ControllerAgent::Init(const ControlConf *control_conf) {
+  // RegisterControllers() 注册控制器
   RegisterControllers(control_conf);
+  // InitializeConf() 实例化控制器controller_factory_.CreateObject
   CHECK(InitializeConf(control_conf).ok()) << "Failed to initialize config.";
+  // controller->Init 初始化控制器
   for (auto &controller : controller_list_) {
     if (controller == nullptr) {
       return Status(ErrorCode::CONTROL_INIT_ERROR, "Controller is null.");

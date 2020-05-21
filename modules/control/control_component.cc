@@ -50,7 +50,7 @@ bool ControlComponent::Init() {
   AINFO << "Conf file: " << FLAGS_control_conf_file << " is loaded.";
 
   AINFO << "Conf file: " << ConfigFilePath() << " is loaded.";
-
+  // ControlComponent::Init()调用controller_agent_.Init(&control_conf_)
   // initial controller agent when not using control submodules
   ADEBUG << "FLAGS_use_control_submodules: " << FLAGS_use_control_submodules;
   if (!FLAGS_use_control_submodules &&
@@ -239,7 +239,7 @@ Status ControlComponent::ProduceControlCommand(
       debug->mutable_latest_replan_trajectory_header()->CopyFrom(
           latest_replan_trajectory_header_);
     }
-    // controller agent
+    // CORE！controller agent.ComputeControlCommand()
     Status status_compute = controller_agent_.ComputeControlCommand(
         &local_view_.localization(), &local_view_.chassis(),
         &local_view_.trajectory(), control_command);
@@ -277,16 +277,16 @@ Status ControlComponent::ProduceControlCommand(
 
 bool ControlComponent::Proc() {
   const auto start_time = Clock::Now();
-
+  // 1.chassis_reader_ Get Latest Observed 读取底盘数据
   chassis_reader_->Observe();
   const auto &chassis_msg = chassis_reader_->GetLatestObserved();
   if (chassis_msg == nullptr) {
     AERROR << "Chassis msg is not ready!";
     return false;
   }
-
   OnChassis(chassis_msg);
 
+  // 2.trajectory_reader_ Get Latest Observed 读取规划轨迹数据
   trajectory_reader_->Observe();
   const auto &trajectory_msg = trajectory_reader_->GetLatestObserved();
   if (trajectory_msg == nullptr) {
@@ -295,6 +295,7 @@ bool ControlComponent::Proc() {
   }
   OnPlanning(trajectory_msg);
 
+  // 3.localization_reader_ Get Latest Observed 读取定位数据
   localization_reader_->Observe();
   const auto &localization_msg = localization_reader_->GetLatestObserved();
   if (localization_msg == nullptr) {
@@ -303,12 +304,13 @@ bool ControlComponent::Proc() {
   }
   OnLocalization(localization_msg);
 
+  // 4.pad_msg_reader_ Get Latest Observed 读取pad指令数据
   pad_msg_reader_->Observe();
   const auto &pad_msg = pad_msg_reader_->GetLatestObserved();
   if (pad_msg != nullptr) {
     OnPad(pad_msg);
   }
-
+  // 5.将输入数据copy到local_view_
   {
     // TODO(SHU): to avoid redundent copy
     std::lock_guard<std::mutex> lock(mutex_);
@@ -362,7 +364,7 @@ bool ControlComponent::Proc() {
   }
 
   ControlCommand control_command;
-
+  // 6.Produce Control Command 生成控制指令
   Status status = ProduceControlCommand(&control_command);
   AERROR_IF(!status.ok()) << "Failed to produce control command:"
                           << status.error_message();
@@ -410,7 +412,7 @@ bool ControlComponent::Proc() {
         local_view_.trajectory().header().lidar_timestamp(), start_time,
         end_time);
   }
-
+  // 7.control_cmd_writer_发布控制指令
   control_cmd_writer_->Write(control_command);
   return true;
 }
