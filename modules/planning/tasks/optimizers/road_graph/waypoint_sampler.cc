@@ -43,7 +43,7 @@ void WaypointSampler::Init(
   init_sl_point_ = init_sl_point;
   init_frenet_frame_point_ = init_frenet_frame_point;
 }
-
+// 采样坐标点
 bool WaypointSampler::SamplePathWaypoints(
     const common::TrajectoryPoint &init_point,
     std::vector<std::vector<common::SLPoint>> *const points) {
@@ -58,18 +58,18 @@ bool WaypointSampler::SamplePathWaypoints(
   const auto &vehicle_config =
       common::VehicleConfigHelper::Instance()->GetConfig();
   const double half_adc_width = vehicle_config.vehicle_param().width() / 2.0;
-  const double num_sample_per_level =
+  const double num_sample_per_level =  // 每个level上横向采样点的个数(？navigation_mode)
       FLAGS_use_navigation_mode ? config_.navigator_sample_num_each_level()
                                 : config_.sample_points_num_each_level();
-
+                                // WaypointSamplerConfig &config_由pb编译生成
   static constexpr double kSamplePointLookForwardTime = 4.0;
   const double level_distance =
       common::math::Clamp(init_point.v() * kSamplePointLookForwardTime,
                           config_.step_length_min(), config_.step_length_max());
-
+  // common::math::Clamp将level_distance限制在[20,40]之间
   double accumulated_s = init_sl_point_.s();
   double prev_s = accumulated_s;
-
+  // 循环进行纵向+横向采样
   static constexpr size_t kNumLevel = 3;
   for (size_t i = 0; i < kNumLevel && accumulated_s < total_length; ++i) {
     accumulated_s += level_distance;
@@ -82,12 +82,12 @@ bool WaypointSampler::SamplePathWaypoints(
       continue;
     }
     prev_s = s;
-
+    // 计算每个纵向level有效的左右边界eff_right_width，保持无人车在车道内行驶
     double left_width = 0.0;
     double right_width = 0.0;
     reference_line_info_->reference_line().GetLaneWidth(s, &left_width,
                                                         &right_width);
-
+    // kBoundaryBuff是无人车与车道线边界线的间距
     static constexpr double kBoundaryBuff = 0.20;
     const double eff_right_width = right_width - half_adc_width - kBoundaryBuff;
     const double eff_left_width = left_width - half_adc_width - kBoundaryBuff;
@@ -96,17 +96,17 @@ bool WaypointSampler::SamplePathWaypoints(
     const double delta_dl = 1.2 / 20.0;
     const double kChangeLaneDeltaL = common::math::Clamp(
         level_distance * (std::fabs(init_frenet_frame_point_.dl()) + delta_dl),
-        1.2, 3.5);
-
+        1.2, 3.5);  //kChangeLaneDeltaL限制在[1.2, 3.5]之间
+    // 横向采样点之间的宽度，如果准备换道则为1.0
     double kDefaultUnitL = kChangeLaneDeltaL / (num_sample_per_level - 1);
     if (reference_line_info_->IsChangeLanePath() &&
         LaneChangeDecider::IsClearToChangeLane(reference_line_info_)) {
       kDefaultUnitL = 1.0;
     }
     const double sample_l_range = kDefaultUnitL * (num_sample_per_level - 1);
-    double sample_right_boundary = -eff_right_width;
+    double sample_right_boundary = -eff_right_width;  //上面计算的有效右边界
     double sample_left_boundary = eff_left_width;
-
+    // 如果已经换道了
     static constexpr double kLargeDeviationL = 1.75;
     static constexpr double kTwentyMilesPerHour = 8.94;
     if (reference_line_info_->IsChangeLanePath() ||
@@ -114,7 +114,7 @@ bool WaypointSampler::SamplePathWaypoints(
       if (EgoInfo::Instance()->start_point().v() > kTwentyMilesPerHour) {
         sample_right_boundary = std::fmin(-eff_right_width, init_sl_point_.l());
         sample_left_boundary = std::fmax(eff_left_width, init_sl_point_.l());
-
+        // 左变道/右变道
         if (init_sl_point_.l() > eff_left_width) {
           sample_right_boundary = std::fmax(
               sample_right_boundary, init_sl_point_.l() - sample_l_range);
@@ -125,7 +125,7 @@ bool WaypointSampler::SamplePathWaypoints(
         }
       }
     }
-
+    // 具体采样
     std::vector<double> sample_l;
     if (reference_line_info_->IsChangeLanePath() &&
         LaneChangeDecider::IsClearToChangeLane(reference_line_info_)) {
@@ -137,7 +137,7 @@ bool WaypointSampler::SamplePathWaypoints(
     }
     std::vector<common::SLPoint> level_points;
     planning_internal::SampleLayerDebug sample_layer_debug;
-    for (size_t j = 0; j < sample_l.size(); ++j) {
+    for (size_t j = 0; j < sample_l.size(); ++j) {  // 每个纵向level的横向采样点
       common::SLPoint sl =
           common::util::PointFactory::ToSLPoint(s, sample_l[j]);
       sample_layer_debug.add_sl_point()->CopyFrom(sl);
