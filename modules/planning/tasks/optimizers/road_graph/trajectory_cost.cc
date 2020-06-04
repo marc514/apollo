@@ -45,16 +45,20 @@ TrajectoryCost::TrajectoryCost(const DpPolyPathConfig &config,
       heuristic_speed_data_(heuristic_speed_data),
       init_sl_point_(init_sl_point),
       adc_sl_boundary_(adc_sl_boundary) {
+  // FLAGS_prediction_total_time: Prediction中障碍物预测轨迹的时长 5s
   const double total_time =
       std::min(heuristic_speed_data_.TotalTime(), FLAGS_prediction_total_time);
-
+  // eval_time_interval: Prediction中障碍物预测轨迹点的时间间隔 0.1s
   num_of_time_stamps_ = static_cast<uint32_t>(
       std::floor(total_time / config.eval_time_interval()));
-
+  // 对obstacles进行条件判断
   for (const auto *ptr_obstacle : obstacles) {
+    // 1.障碍物可忽略
     if (ptr_obstacle->IsIgnore()) {
       continue;
-    } else if (ptr_obstacle->LongitudinalDecision().has_stop()) {
+    } 
+    // 2.障碍物已触发停车
+    else if (ptr_obstacle->LongitudinalDecision().has_stop()) {
       continue;
     }
     const auto &sl_boundary = ptr_obstacle->PerceptionSLBoundary();
@@ -63,7 +67,7 @@ TrajectoryCost::TrajectoryCost(const DpPolyPathConfig &config,
         init_sl_point_.l() + vehicle_param_.left_edge_to_center();
     const double adc_right_l =
         init_sl_point_.l() - vehicle_param_.right_edge_to_center();
-
+    // 3.障碍物横向距离较大，不影响通过
     if (adc_left_l + FLAGS_lateral_ignore_buffer < sl_boundary.start_l() ||
         adc_right_l - FLAGS_lateral_ignore_buffer > sl_boundary.end_l()) {
       continue;
@@ -74,13 +78,17 @@ TrajectoryCost::TrajectoryCost(const DpPolyPathConfig &config,
              perception::PerceptionObstacle::BICYCLE ||
          ptr_obstacle->Perception().type() ==
              perception::PerceptionObstacle::PEDESTRIAN);
-
+    // 4.障碍物为虚拟
     if (ptr_obstacle->IsVirtual()) {
       // Virtual obstacle
       continue;
-    } else if (ptr_obstacle->IsStatic() || is_bycycle_or_pedestrian) {
+    } 
+    // 5.障碍物为静止自行车或行人，则加入队列static_obstacle_sl_boundaries_
+    else if (ptr_obstacle->IsStatic() || is_bycycle_or_pedestrian) {
       static_obstacle_sl_boundaries_.push_back(std::move(sl_boundary));
-    } else {
+    } 
+    // 6.其他障碍物，则加入队列dynamic_obstacle_boxes_
+    else {
       std::vector<Box2d> box_by_time;
       for (uint32_t t = 0; t <= num_of_time_stamps_; ++t) {
         TrajectoryPoint trajectory_point =
@@ -317,7 +325,7 @@ Box2d TrajectoryCost::GetBoxFromSLPoint(const common::SLPoint &sl,
                vehicle_param_.width());
 }
 
-// TODO(All): optimize obstacle cost calculation time
+// !TODO(All): optimize obstacle cost calculation time
 ComparableCost TrajectoryCost::Calculate(const QuinticPolynomialCurve1d &curve,
                                          const double start_s,
                                          const double end_s,
