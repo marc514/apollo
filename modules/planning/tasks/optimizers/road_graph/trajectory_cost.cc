@@ -105,7 +105,7 @@ TrajectoryCost::TrajectoryCost(const DpPolyPathConfig &config,
     }
   }
 }
-
+// 计算PathCost
 ComparableCost TrajectoryCost::CalculatePathCost(
     const QuinticPolynomialCurve1d &curve, const double start_s,
     const double end_s, const uint32_t curr_level, const uint32_t total_level) {
@@ -120,22 +120,22 @@ ComparableCost TrajectoryCost::CalculatePathCost(
 
   for (double curve_s = 0.0; curve_s < (end_s - start_s);
        curve_s += config_.path_resolution()) {
+    // path_cost += 0阶：l
     const double l = curve.Evaluate(0, curve_s);
-
     path_cost += l * l * config_.path_l_cost() * quasi_softmax(std::fabs(l));
-
+    // path_cost += 1阶：dl
     const double dl = std::fabs(curve.Evaluate(1, curve_s));
+    // 判断是否偏离参考线
     if (IsOffRoad(curve_s + start_s, l, dl, is_change_lane_path_)) {
       cost.cost_items[ComparableCost::OUT_OF_BOUNDARY] = true;
     }
-
     path_cost += dl * dl * config_.path_dl_cost();
-
+    // path_cost += 2阶：ddl
     const double ddl = std::fabs(curve.Evaluate(2, curve_s));
     path_cost += ddl * ddl * config_.path_ddl_cost();
   }
   path_cost *= config_.path_resolution();
-
+  // 判断是否到终点
   if (curr_level == total_level) {
     const double end_l = curve.Evaluate(0, end_s - start_s);
     path_cost +=
@@ -186,13 +186,13 @@ bool TrajectoryCost::IsOffRoad(const double ref_s, const double l,
 
   return false;
 }
-
+// 计算static obstacle cost
 ComparableCost TrajectoryCost::CalculateStaticObstacleCost(
     const QuinticPolynomialCurve1d &curve, const double start_s,
     const double end_s) {
   ComparableCost obstacle_cost;
   for (double curr_s = start_s; curr_s <= end_s;
-       curr_s += config_.path_resolution()) {
+       curr_s += config_.path_resolution()) {  // 沿拟合曲线采样
     const double curr_l = curve.Evaluate(0, curr_s - start_s);
     for (const auto &obs_sl_boundary : static_obstacle_sl_boundaries_) {
       obstacle_cost += GetCostFromObsSL(curr_s, curr_l, obs_sl_boundary);
@@ -201,7 +201,7 @@ ComparableCost TrajectoryCost::CalculateStaticObstacleCost(
   obstacle_cost.safety_cost *= config_.path_resolution();
   return obstacle_cost;
 }
-
+// 计算dynamic obstacle cost
 ComparableCost TrajectoryCost::CalculateDynamicObstacleCost(
     const QuinticPolynomialCurve1d &curve, const double start_s,
     const double end_s) const {
@@ -211,6 +211,7 @@ ComparableCost TrajectoryCost::CalculateDynamicObstacleCost(
   }
 
   double time_stamp = 0.0;
+  // 每隔eval_time_interval(0.1s)的障碍物坐标位置，求和
   for (size_t index = 0; index < num_of_time_stamps_;
        ++index, time_stamp += config_.eval_time_interval()) {
     common::SpeedPoint speed_point;
@@ -239,7 +240,7 @@ ComparableCost TrajectoryCost::CalculateDynamicObstacleCost(
       (config_.eval_time_interval() * kDynamicObsWeight);
   return obstacle_cost;
 }
-
+// Get Cost From Obs SL
 ComparableCost TrajectoryCost::GetCostFromObsSL(
     const double adc_s, const double adc_l, const SLBoundary &obs_sl_boundary) {
   const auto &vehicle_param =
@@ -301,10 +302,11 @@ ComparableCost TrajectoryCost::GetCostBetweenObsBoxes(
   if (distance > config_.obstacle_ignore_distance()) {
     return obstacle_cost;
   }
-
+  // obstacle_collision_distance：0.5
   obstacle_cost.safety_cost +=
       config_.obstacle_collision_cost() *
       Sigmoid(config_.obstacle_collision_distance() - distance);
+  // obstacle_risk_distance：2.0
   obstacle_cost.safety_cost +=
       20.0 * Sigmoid(config_.obstacle_risk_distance() - distance);
   return obstacle_cost;
@@ -325,7 +327,7 @@ Box2d TrajectoryCost::GetBoxFromSLPoint(const common::SLPoint &sl,
                vehicle_param_.width());
 }
 
-// !TODO(All): optimize obstacle cost calculation time
+// ! TODO(All): optimize obstacle cost calculation time
 ComparableCost TrajectoryCost::Calculate(const QuinticPolynomialCurve1d &curve,
                                          const double start_s,
                                          const double end_s,
