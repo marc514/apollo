@@ -103,12 +103,12 @@ bool DpRoadGraph::FindPathTunnel(const common::TrajectoryPoint &init_point,
   path_data->SetFrenetPath(FrenetFramePath(std::move(frenet_path)));
   return true;
 }
-
+// 纵向采样点之间计算cost
 bool DpRoadGraph::GenerateMinCostPath(
     const std::vector<const Obstacle *> &obstacles,
     std::vector<DpRoadGraphNode> *min_cost_path) {
   CHECK(min_cost_path != nullptr);
-
+  // SamplePathWaypoints()采样坐标点
   std::vector<std::vector<common::SLPoint>> path_waypoints;
   if (!waypoint_sampler_->SamplePathWaypoints(init_point_, &path_waypoints) ||
       path_waypoints.size() < 1) {
@@ -118,7 +118,7 @@ bool DpRoadGraph::GenerateMinCostPath(
   }
   const auto &vehicle_config =
       common::VehicleConfigHelper::Instance()->GetConfig();
-
+  // 构造函数计算trajectory_cost，输入参考线/换道/障碍物/速度等
   TrajectoryCost trajectory_cost(
       config_, reference_line_, reference_line_info_.IsChangeLanePath(),
       obstacles, vehicle_config.vehicle_param(), speed_data_, init_sl_point_,
@@ -126,7 +126,7 @@ bool DpRoadGraph::GenerateMinCostPath(
 
   std::list<std::list<DpRoadGraphNode>> graph_nodes;
 
-  // find one point from first row
+  // 规划的起点：find one point from first row, nearest_i
   const auto &first_row = path_waypoints.front();
   size_t nearest_i = 0;
   for (size_t i = 1; i < first_row.size(); ++i) {
@@ -137,17 +137,17 @@ bool DpRoadGraph::GenerateMinCostPath(
   }
   graph_nodes.emplace_back();
   graph_nodes.back().emplace_back(first_row[nearest_i], nullptr,
-                                  ComparableCost());
-  auto &front = graph_nodes.front().front();
-  size_t total_level = path_waypoints.size();
-
+                                  ComparableCost());  // 输入层加入网络
+  auto &front = graph_nodes.front().front();  // 规划起点
+  size_t total_level = path_waypoints.size();  // level层数
+  // 相邻两层之间计算cost
   for (size_t level = 1; level < path_waypoints.size(); ++level) {
-    const auto &prev_dp_nodes = graph_nodes.back();
-    const auto &level_points = path_waypoints[level];
+    const auto &prev_dp_nodes = graph_nodes.back();  // 前一层
+    const auto &level_points = path_waypoints[level];  // 当前层所有采样点
 
     graph_nodes.emplace_back();
     std::vector<std::future<void>> results;
-
+    // 计算当前层所有采样点与前一层连接的cost
     for (size_t i = 0; i < level_points.size(); ++i) {
       const auto &cur_point = level_points[i];
 
@@ -160,7 +160,7 @@ bool DpRoadGraph::GenerateMinCostPath(
       if (FLAGS_enable_multi_thread_in_dp_poly_path) {
         results.emplace_back(cyber::Async(&DpRoadGraph::UpdateNode, this, msg));
       } else {
-        UpdateNode(msg);
+        UpdateNode(msg);  // 计算当前层当前点与前一层连接的cost，取最小
       }
     }
     if (FLAGS_enable_multi_thread_in_dp_poly_path) {
@@ -172,11 +172,12 @@ bool DpRoadGraph::GenerateMinCostPath(
 
   // find best path
   DpRoadGraphNode fake_head;
+  // 在最后一个level中查找
   for (const auto &cur_dp_node : graph_nodes.back()) {
     fake_head.UpdateCost(&cur_dp_node, cur_dp_node.min_cost_curve,
                          cur_dp_node.min_cost);
   }
-
+  // 从最后一层倒序查找min_cost的节点
   const auto *min_cost_node = &fake_head;
   while (min_cost_node->min_cost_prev_node) {
     min_cost_node = min_cost_node->min_cost_prev_node;
@@ -185,7 +186,7 @@ bool DpRoadGraph::GenerateMinCostPath(
   if (min_cost_node != &graph_nodes.front().front()) {
     return false;
   }
-
+  // 倒置，即最小cost的路径
   std::reverse(min_cost_path->begin(), min_cost_path->end());
 
   for (const auto &node : *min_cost_path) {
@@ -197,7 +198,7 @@ bool DpRoadGraph::GenerateMinCostPath(
   }
   return true;
 }
-
+// 计算当前层当前采样点和前一层之间的cost
 void DpRoadGraph::UpdateNode(const std::shared_ptr<RoadGraphMessage> &msg) {
   CHECK_NOTNULL(msg);
   CHECK_NOTNULL(msg->trajectory_cost);
@@ -212,6 +213,7 @@ void DpRoadGraph::UpdateNode(const std::shared_ptr<RoadGraphMessage> &msg) {
       init_dl = init_frenet_frame_point_.dl();
       init_ddl = init_frenet_frame_point_.ddl();
     }
+    // 五次多项式拟合曲线
     QuinticPolynomialCurve1d curve(prev_sl_point.l(), init_dl, init_ddl,
                                    cur_point.l(), 0.0, 0.0,
                                    cur_point.s() - prev_sl_point.s());
@@ -219,6 +221,7 @@ void DpRoadGraph::UpdateNode(const std::shared_ptr<RoadGraphMessage> &msg) {
     if (!IsValidCurve(curve)) {
       continue;
     }
+    // ! Calculate()
     const auto cost =
         msg->trajectory_cost->Calculate(curve, prev_sl_point.s(), cur_point.s(),
                                         msg->level, msg->total_level) +
