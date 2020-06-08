@@ -58,18 +58,21 @@ bool DpRoadGraph::FindPathTunnel(const common::TrajectoryPoint &init_point,
            << init_point.DebugString();
     return false;
   }
+  // 计算起始点的累计距离s，侧方相对偏移l，侧向速度dl和侧向速度ddl
   init_frenet_frame_point_ =
       reference_line_.GetFrenetPoint(init_point_.path_point());
 
   waypoint_sampler_->Init(&reference_line_info_, init_sl_point_,
                           init_frenet_frame_point_);
   waypoint_sampler_->SetDebugLogger(planning_debug_);
-
+  // 获取当前参考线下最优的前进路线
   std::vector<DpRoadGraphNode> min_cost_path;
   if (!GenerateMinCostPath(obstacles, &min_cost_path)) {
     AERROR << "Fail to generate graph!";
     return false;
   }
+
+  // 将最优的前进路线封装进frenet_frame_point
   std::vector<common::FrenetFramePoint> frenet_path;
   double accumulated_s = min_cost_path.front().sl_point.s();
   const double path_resolution = config_.path_resolution();
@@ -103,6 +106,7 @@ bool DpRoadGraph::FindPathTunnel(const common::TrajectoryPoint &init_point,
   path_data->SetFrenetPath(FrenetFramePath(std::move(frenet_path)));
   return true;
 }
+
 // 纵向采样点之间计算cost
 bool DpRoadGraph::GenerateMinCostPath(
     const std::vector<const Obstacle *> &obstacles,

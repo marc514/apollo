@@ -30,11 +30,11 @@ using apollo::common::Status;
 using apollo::planning_internal::STGraphDebug;
 
 SpeedOptimizer::SpeedOptimizer(const TaskConfig& config) : Task(config) {}
-
+// 速度优化算法的入口
 Status SpeedOptimizer::Execute(Frame* frame,
                                ReferenceLineInfo* reference_line_info) {
   Task::Execute(frame, reference_line_info);
-
+  // 调用SpeedOptimizer子类的Process()
   auto ret =
       Process(reference_line_info->path_data(), frame->PlanningStartPoint(),
               reference_line_info->mutable_speed_data());
