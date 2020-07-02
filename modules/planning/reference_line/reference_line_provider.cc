@@ -773,6 +773,7 @@ AnchorPoint ReferenceLineProvider::GetAnchorPoint(
     const ReferenceLine &reference_line, double s) const {
   AnchorPoint anchor;
   anchor.longitudinal_bound = smoother_config_.longitudinal_boundary_bound();
+  // call GetReferencePoint()
   auto ref_point = reference_line.GetReferencePoint(s);
   if (ref_point.lane_waypoints().empty()) {
     anchor.path_point = ref_point.ToPathPoint(s);
@@ -848,12 +849,16 @@ void ReferenceLineProvider::GetAnchorPoints(
     const ReferenceLine &reference_line,
     std::vector<AnchorPoint> *anchor_points) const {
   CHECK_NOTNULL(anchor_points);
+  // interval采样间隔(5m)
   const double interval = smoother_config_.max_constraint_interval();
+  // 路径采样点个数
   int num_of_anchors =
       std::max(2, static_cast<int>(reference_line.Length() / interval + 0.5));
   std::vector<double> anchor_s;
+  // uniform_slice返回采样距离数组vector<double>anchor_s
   common::util::uniform_slice(0.0, reference_line.Length(), num_of_anchors - 1,
                               &anchor_s);
+  // 对anchor_s数组中每个s，GetAnchorPoint
   for (const double s : anchor_s) {
     AnchorPoint anchor = GetAnchorPoint(reference_line, s);
     anchor_points->emplace_back(anchor);
