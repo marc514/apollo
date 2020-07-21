@@ -49,7 +49,7 @@ QpSplineReferenceLineSmoother::QpSplineReferenceLineSmoother(
 }
 
 void QpSplineReferenceLineSmoother::Clear() { t_knots_.clear(); }
-
+// Smooth() call Sampling()AddConstraint()AddKernel()Solve()
 bool QpSplineReferenceLineSmoother::Smooth(
     const ReferenceLine& raw_reference_line,
     ReferenceLine* const smoothed_reference_line) {
@@ -81,11 +81,11 @@ bool QpSplineReferenceLineSmoother::Smooth(
   std::chrono::duration<double> diff = end - start;
   ADEBUG << "QpSplineReferenceLineSmoother solve time is "
          << diff.count() * 1000.0 << " ms.";
-
+  // 离散地保存Solve()得到的ReferenceLine
   // mapping spline to reference line point
   const double start_t = t_knots_.front();
   const double end_t = t_knots_.back();
-
+  // 采样精度(500个点)
   const double resolution =
       (end_t - start_t) / (config_.num_of_total_points() - 1);
   double t = start_t;
@@ -93,11 +93,14 @@ bool QpSplineReferenceLineSmoother::Smooth(
   const auto& spline = spline_solver_->spline();
   for (std::uint32_t i = 0; i < config_.num_of_total_points() && t < end_t;
        ++i, t += resolution) {
+    // heading角
     const double heading =
         std::atan2(spline.DerivativeY(t), spline.DerivativeX(t));
+    // kappa 曲率
     const double kappa = CurveMath::ComputeCurvature(
         spline.DerivativeX(t), spline.SecondDerivativeX(t),
         spline.DerivativeY(t), spline.SecondDerivativeY(t));
+    // dkappa 曲率导数
     const double dkappa = CurveMath::ComputeCurvatureDerivative(
         spline.DerivativeX(t), spline.SecondDerivativeX(t),
         spline.ThirdDerivativeX(t), spline.DerivativeY(t),
@@ -134,10 +137,11 @@ bool QpSplineReferenceLineSmoother::Smooth(
   *smoothed_reference_line = ReferenceLine(ref_points);
   return true;
 }
-
+// Qp-参考线-样条平滑-采样
 bool QpSplineReferenceLineSmoother::Sampling() {
   const double length = anchor_points_.back().path_point.s() -
                         anchor_points_.front().path_point.s();
+  // max_spline_length(25m)
   uint32_t num_spline =
       std::max(1u, static_cast<uint32_t>(
                        length / config_.qp_spline().max_spline_length() + 0.5));
@@ -149,13 +153,14 @@ bool QpSplineReferenceLineSmoother::Sampling() {
   ref_y_ = anchor_points_.front().path_point.y();
   return true;
 }
-
+// add constraint 增加约束
 bool QpSplineReferenceLineSmoother::AddConstraint() {
   // Add x, y boundary constraint
   std::vector<double> headings;
   std::vector<double> longitudinal_bound;
   std::vector<double> lateral_bound;
   std::vector<common::math::Vec2d> xy_points;
+  // anchor_points_因变量处理坐标原点
   for (const auto& point : anchor_points_) {
     const auto& path_point = point.path_point;
     headings.push_back(path_point.theta());
@@ -163,16 +168,18 @@ bool QpSplineReferenceLineSmoother::AddConstraint() {
     lateral_bound.push_back(point.lateral_bound);
     xy_points.emplace_back(path_point.x() - ref_x_, path_point.y() - ref_y_);
   }
+  // 将anchor_points_自变量区间[0,length_]按比例映射到[0,num_spline]
   const double scale = (anchor_points_.back().path_point.s() -
                         anchor_points_.front().path_point.s()) /
                        (t_knots_.back() - t_knots_.front());
+
   std::vector<double> evaluated_t;
   for (const auto& point : anchor_points_) {
     evaluated_t.emplace_back(point.path_point.s() / scale);
   }
 
   auto* spline_constraint = spline_solver_->mutable_constraint();
-
+  // 约束条件
   // all points (x, y) should not deviate anchor points by a bounding box
   if (!spline_constraint->Add2dBoundary(evaluated_t, headings, xy_points,
                                         longitudinal_bound, lateral_bound)) {
@@ -181,7 +188,6 @@ bool QpSplineReferenceLineSmoother::AddConstraint() {
   }
 
   // the heading of the first point should be identical to the anchor point.
-
   if (FLAGS_enable_reference_line_stitching &&
       !spline_constraint->AddPointAngleConstraint(evaluated_t.front(),
                                                   headings.front())) {

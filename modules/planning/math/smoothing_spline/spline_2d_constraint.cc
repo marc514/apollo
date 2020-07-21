@@ -285,6 +285,7 @@ bool Spline2dConstraint::AddPointAngleConstraint(const double t,
   // add equality constraint
   Eigen::MatrixXd affine_equality = Eigen::MatrixXd::Zero(1, total_param_);
   Eigen::MatrixXd affine_boundary = Eigen::MatrixXd::Zero(1, 1);
+  // call AffineDerivativeCoef()
   std::vector<double> line_derivative_coef = AffineDerivativeCoef(angle, rel_t);
   for (uint32_t i = 0; i < line_derivative_coef.size(); ++i) {
     affine_equality(0, i + index_offset) = line_derivative_coef[i];

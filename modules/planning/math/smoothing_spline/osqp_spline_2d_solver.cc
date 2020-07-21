@@ -55,7 +55,7 @@ Spline2dConstraint* OsqpSpline2dSolver::mutable_constraint() {
 Spline2dKernel* OsqpSpline2dSolver::mutable_kernel() { return &kernel_; }
 
 Spline2d* OsqpSpline2dSolver::mutable_spline() { return &spline_; }
-
+// call osqp_solve() !
 bool OsqpSpline2dSolver::Solve() {
   // Namings here are following osqp convention.
   // For details, visit: https://osqp.org/docs/examples/demo.html
@@ -149,7 +149,7 @@ bool OsqpSpline2dSolver::Solve() {
   // Setup workspace
   OSQPWorkspace* work = osqp_setup(data, settings);
 
-  // Solve Problem
+  // Solve Problem !
   osqp_solve(work);
 
   MatrixXd solved_params = MatrixXd::Zero(P.rows(), 1);
