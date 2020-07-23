@@ -68,7 +68,7 @@ Status PathBoundsDecider::Process(
 
   // Initialization.
   InitPathBoundsDecider(*frame, *reference_line_info);
-
+  // fallback is a backup for other three failure
   // Generate the fallback path boundary.
   PathBound fallback_path_bound;
   Status ret =
