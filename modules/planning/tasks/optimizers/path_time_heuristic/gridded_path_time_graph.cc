@@ -115,7 +115,7 @@ Status GriddedPathTimeGraph::Search(SpeedData* const speed_data) {
       return Status::OK();
     }
   }
-
+  // 对应3.5中./tasks/optimizer/dp_st_speed中DpStGraph::InitCostTable
   if (!InitCostTable().ok()) {
     const std::string msg = "Initialize cost table failed.";
     AERROR << msg;
