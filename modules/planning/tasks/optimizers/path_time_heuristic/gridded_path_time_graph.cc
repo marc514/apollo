@@ -394,7 +394,7 @@ void GriddedPathTimeGraph::CalculateCostAt(
   // 就能够得到上一列的计算范围[r_low, r],上一列的size,r_pre_size = r - r_low + 1
   // 对col[2]计算:
   // 遍历前一列[r_low, r],由起始点col[0]开始,经第二列col[1]的点,到达当前点的TotalCost,计算方法同col[1]
-  // 不同之处在于,由于当前点可经由第二列不同的点到达,因此会得到几个TotalCost,选最小的一个
+  // 不同之处在于,由于当前点可经由col[1]上不同的点到达,因此会得到几个TotalCost,选最小的一个
   if (c == 2) {
     for (uint32_t i = 0; i < r_pre_size; ++i) {
       uint32_t r_pre = r - i;
@@ -446,7 +446,10 @@ void GriddedPathTimeGraph::CalculateCostAt(
     }
     return;
   }
-
+  // 当计算进行到第4列col[3]及以后,就会执行这部分代码。
+  // 同样的,在计算之前,缩小前一列范围,然后遍历前一列[r_low, r]范围内的点,计算当前点的cost
+  // 这一部分的计算方法与col[2]相同,之所以再写一遍是计算JerkCost时,这里会多计算一个点,仅此处不同而已
+  // 同样的,在最后会找到当前列TotalCost最小的点,并记录下它的PrePoint
   for (uint32_t i = 0; i < r_pre_size; ++i) {
     uint32_t r_pre = r - i;
     if (std::isinf(pre_col[r_pre].total_cost()) ||
@@ -504,7 +507,7 @@ void GriddedPathTimeGraph::CalculateCostAt(
     }
   }
 }
-
+// 在动态规划后，得到速度曲线
 Status GriddedPathTimeGraph::RetrieveSpeedProfile(SpeedData* const speed_data) {
   double min_cost = std::numeric_limits<double>::infinity();
   const StGraphPoint* best_end_point = nullptr;
